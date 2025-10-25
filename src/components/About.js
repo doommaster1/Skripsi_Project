@@ -1,4 +1,3 @@
-import React from 'react';
 
 const About = () => (
   <section id="about" className="content-section active">
@@ -44,11 +43,11 @@ const About = () => (
 
       <h3>Teknologi yang Digunakan</h3>
       <ul className="feature-list">
-        <li>Frontend: HTML5, CSS3, JavaScript</li>
+        <li>Frontend: HTML5, CSS3, JavaScript, React</li>
         <li>Visualization: Chart.js</li>
         <li>Machine Learning: Python, Scikit-learn</li>
-        <li>Database: SQL Server / PostgreSQL</li>
-        <li>Framework: Flask / Django (Backend)</li>
+        <li>Database: PostgreSQL</li>
+        <li>Framework: Django (Backend)</li>
       </ul>
     </div>
   </section>
