@@ -1,0 +1,39 @@
+# Django & Python Temp
+*.pyc
+__pycache__/
+*.log
+*.pot
+*.pyo
+*.swp
+
+# Database Lokal
+db.sqlite3
+*.sql # Hindari commit file SQL jika berisi data sensitif/besar
+
+# File Upload Pengguna (jika ada)
+media/
+# File Statis Hasil Collectstatic (jika dijalankan)
+staticfiles/
+
+# File Environment (Kunci API, dll.)
+.env
+*.env
+
+# Python Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+*.venv
+
+# File Model Machine Learning (jika sensitif atau besar)
+# *.pkl
+# *.joblib
+# *.h5
+
+# File Hasil Clustering (jika tidak ingin di-commit)
+# cluster_results.json
+
+# OS specific
+.DS_Store
+Thumbs.db
