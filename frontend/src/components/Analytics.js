@@ -108,7 +108,7 @@ const Analytics = () => {
         labels: apiData.map(d => d.month),
         datasets: [
           { label: 'Total Tiket Dibuka', data: apiData.map(d => d.total_tickets), borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.5)', tension: 0.1 },
-          { label: 'Tiket Melanggar SLA', data: apiData.map(d => d.violation), borderColor: 'rgb(239, 68, 68)', backgroundColor: 'rgba(239, 68, 68, 0.5)', tension: 0.1 },
+          { label: 'Tiket Melanggar SLA', data: apiData.map(d => d.violated_tickets), borderColor: 'rgb(239, 68, 68)', backgroundColor: 'rgba(239, 68, 68, 0.5)', tension: 0.1 },
         ],
       };
     };

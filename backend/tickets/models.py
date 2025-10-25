@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 
+
 class Ticket(models.Model):
     # ID dari CSV
     number = models.CharField(max_length=50, primary_key=True)  # Unique ID seperti '3226220'
@@ -16,19 +17,19 @@ class Ticket(models.Model):
         ]
     )
     category = models.CharField(
-        max_length=50,
+        max_length=100,
         choices=[
-            ('kegagalan proses', 'kegagalan proses'),
-            ('event monitoring', 'event monitoring'),
-            ('eod production', 'eod production'),
-            ('transaction', 'transaction'),
-            ('tidak bisa dilakukan', 'tidak bisa dilakukan'),
-            ('drop', 'drop'),
-            ('cannot access', 'cannot access'),
-            ('tidak dapat login', 'tidak dapat login'),
-            ('penjelasan detail sebuah transaksi', 'penjelasan detail sebuah transaksi'),
-            ('application', 'application'),
-            ('hardware', 'hardware'),
+            # ('kegagalan proses', 'kegagalan proses'),
+            # ('event monitoring', 'event monitoring'),
+            # ('eod production', 'eod production'),
+            # ('transaction', 'transaction'),
+            # ('tidak bisa dilakukan', 'tidak bisa dilakukan'),
+            # ('drop', 'drop'),
+            # ('cannot access', 'cannot access'),
+            # ('tidak dapat login', 'tidak dapat login'),
+            # ('penjelasan detail sebuah transaksi', 'penjelasan detail sebuah transaksi'),
+            # ('application', 'application'),
+            # ('hardware', 'hardware'),
             # Tambah dari unique values di CSV jika ada lebih
         ]
     )

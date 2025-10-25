@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback} from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import TicketDetailModal from './TicketDetailModal';
 
 const Dashboard = () => {
@@ -21,6 +21,7 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [categories, setCategories] = useState([]);
   const [sortOrder, setSortOrder] = useState('-open_date');
 
   const debouncedSearch = useCallback(() => {
@@ -41,6 +42,32 @@ const Dashboard = () => {
   };
 
   // Fetch stats (tetap sama)
+  useEffect(() => {
+    // Fetch ini hanya untuk mengisi dropdown filter, jalan sekali saja
+    console.log('Fetching unique filter values...');
+    fetch('http://localhost:8000/api/unique-values/')
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Gagal mengambil data filter kategori');
+        }
+        return res.json();
+      })
+      .then(data => {
+        // Endpoint Anda mengembalikan { categories: [], items: [], ... }
+        if (data && Array.isArray(data.categories)) {
+          setCategories(data.categories); // Simpan daftarnya di state
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching unique values:', err);
+        // Opsi: Set kategori default jika fetch gagal
+        // setCategories([
+        //   { value: 'kegagalan proses', label: 'Kegagalan Proses' },
+        //   { value: 'application', label: 'Application' },
+        // ]);
+      });
+  }, []);
+
   useEffect(() => {
     console.log('Fetching stats...');  // Debug start
     setLoadingStats(true);
@@ -200,9 +227,11 @@ const Dashboard = () => {
           style={{ padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
         >
           <option value="all">All Category</option>
-          <option value="kegagalan proses">Kegagalan Proses</option>
-          <option value="application">Application</option>
-          <option value="event monitoring">Event Monitoring</option>
+          {categories.map((category) => (
+            <option key={category.value} value={category.value}>
+              {category.label}
+            </option>
+          ))}
           {/* Tambah option lain dari CSV unique: df['Category'].unique() */}
         </select>
         
