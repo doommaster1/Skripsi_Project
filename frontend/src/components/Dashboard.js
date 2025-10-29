@@ -3,136 +3,150 @@ import TicketDetailModal from './TicketDetailModal';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
-    total_tickets: null,  // Init null, bukan dummy
+    total_tickets: null,
     violation_count: null,
     compliance_count: null,
     compliance_rate: null,
-    // ... tambah fields lain jika pakai
   });
   const [tickets, setTickets] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [loadingStats, setLoadingStats] = useState(true);  // Loading khusus stats
-  const [loadingTickets, setLoadingTickets] = useState(true);  // Loading khusus tickets
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingTickets, setLoadingTickets] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const PAGE_SIZE = 7;  // Sesuai backend
+  const PAGE_SIZE = 7;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  // --- BARU: State untuk filter SLA ---
+  const [violationFilter, setViolationFilter] = useState('all');
+  // --- AKHIR BARU ---
   const [categories, setCategories] = useState([]);
   const [sortOrder, setSortOrder] = useState('-open_date');
 
   const debouncedSearch = useCallback(() => {
-    // Fetch ulang hanya setelah delay
-    setCurrentPage(1);  // Reset page
-    // useEffect akan trigger otomatis karena dependency searchTerm
+    setCurrentPage(1);
   }, []);
 
-  // Input onChange dengan debounce
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    // Clear timeout sebelumnya & set baru
     if (handleSearchChange.timeoutId) {
       clearTimeout(handleSearchChange.timeoutId);
     }
-    handleSearchChange.timeoutId = setTimeout(debouncedSearch, 300);  // Delay 300ms
+    handleSearchChange.timeoutId = setTimeout(debouncedSearch, 300);
   };
 
-  // Fetch stats (tetap sama)
+  // Fetch unique (untuk dropdown filter)
   useEffect(() => {
-    // Fetch ini hanya untuk mengisi dropdown filter, jalan sekali saja
     console.log('Fetching unique filter values...');
     fetch('http://localhost:8000/api/unique-values/')
       .then(res => {
-        if (!res.ok) {
-          throw new Error('Gagal mengambil data filter kategori');
-        }
+        if (!res.ok) throw new Error('Gagal mengambil data filter kategori');
         return res.json();
       })
       .then(data => {
-        // Endpoint Anda mengembalikan { categories: [], items: [], ... }
         if (data && Array.isArray(data.categories)) {
-          setCategories(data.categories); // Simpan daftarnya di state
+          setCategories(data.categories);
         }
       })
       .catch(err => {
         console.error('Error fetching unique values:', err);
-        // Opsi: Set kategori default jika fetch gagal
-        // setCategories([
-        //   { value: 'kegagalan proses', label: 'Kegagalan Proses' },
-        //   { value: 'application', label: 'Application' },
-        // ]);
       });
   }, []);
 
+  // Fetch stats (DI MODIFIKASI)
   useEffect(() => {
-    console.log('Fetching stats...');  // Debug start
+    console.log('Fetching stats...');
     setLoadingStats(true);
-    fetch('http://localhost:8000/api/stats/')
+
+    // BARU: Logika pembuatan URL yang lebih baik untuk banyak filter
+    const params = new URLSearchParams();
+    if (priorityFilter !== 'all') {
+      params.append('priority', priorityFilter);
+    }
+    if (violationFilter !== 'all') {
+      params.append('is_sla_violated', violationFilter);
+    }
+    
+    const queryString = params.toString();
+    const url = `http://localhost:8000/api/stats/${queryString ? '?' + queryString : ''}`;
+    
+    console.log('Stats URL:', url); // Debug URL baru
+
+    fetch(url)
       .then(res => {
-        console.log('Stats response status:', res.status);  // Debug status
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         return res.json();
       })
       .then(data => {
-        console.log('Stats data received:', data);  // Debug full data
-        setStats(data);  // Update state
+        console.log('Stats data received:', data);
+        setStats(data);
         setLoadingStats(false);
       })
       .catch(err => {
-        console.error('Stats fetch error:', err);  // Log detail error
+        console.error('Stats fetch error:', err);
         setLoadingStats(false);
-        alert('Gagal load stats: ' + err.message);
-        // Fallback dummy jika gagal (untuk test)
-        setStats({
-          total_tickets: 49836,
-          violation_count: 11107,
-          compliance_count: 38729,
-          compliance_rate: 77.7,
+        setStats({ // Set fallback agar tidak crash
+            total_tickets: 0,
+            violation_count: 0,
+            compliance_count: 0,
+            compliance_rate: 0,
         });
       });
-  }, []);  // Jalankan sekali
+  // BARU: Tambahkan violationFilter sebagai dependency
+  }, [priorityFilter, violationFilter]);
 
+  // Fetch tickets (DI MODIFIKASI)
   useEffect(() => {
-    if (searchTerm.length < 2) return;  // Skip fetch jika <2 char (hindari spam kosong)
-    // ... existing fetch code ...
-  }, [currentPage, searchTerm, priorityFilter, categoryFilter, sortOrder]);
-
-  // Fetch tickets (dengan params filter, independen dari stats)
-  useEffect(() => {
-    console.log('Fetching tickets...');  // Debug
+    console.log('Fetching tickets...');
     setLoadingTickets(true);
-    let url = `http://localhost:8000/api/tickets/?page=${currentPage}&page_size=${PAGE_SIZE}`;
-    if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
-    if (priorityFilter !== 'all') url += `&priority=${encodeURIComponent(priorityFilter)}`;
-    if (categoryFilter !== 'all') url += `&category=${encodeURIComponent(categoryFilter)}`;
-    url += `&sort=${sortOrder}`;
     
-    console.log('Tickets URL:', url);  // Debug URL
+    // Gunakan URLSearchParams untuk membuat URL
+    const params = new URLSearchParams({
+      page: currentPage,
+      page_size: PAGE_SIZE,
+      sort: sortOrder,
+    });
+
+    if (searchTerm) {
+      params.append('search', searchTerm);
+    }
+    if (priorityFilter !== 'all') {
+      params.append('priority', priorityFilter);
+    }
+    if (categoryFilter !== 'all') {
+      params.append('category', categoryFilter);
+    }
+    // --- BARU: Tambahkan filter SLA ke query tiket ---
+    if (violationFilter !== 'all') {
+      params.append('is_sla_violated', violationFilter);
+    }
+    // --- AKHIR BARU ---
+
+    const url = `http://localhost:8000/api/tickets/?${params.toString()}`;
+    console.log('Tickets URL:', url);
     
     fetch(url)
       .then(res => {
-        console.log('Tickets response status:', res.status);  // Debug
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then(data => {
-        console.log('Tickets data received:', data);  // Debug
-        setTickets(data.results || data);
+        console.log('Tickets data received:', data);
+        setTickets(data.results || []); // Fallback ke array kosong
         setTotalPages(Math.ceil((data.count || 0) / PAGE_SIZE));
         setLoadingTickets(false);
       })
       .catch(err => {
         console.error('Tickets fetch error:', err);
         setLoadingTickets(false);
-        alert('Gagal load tickets: ' + err.message);
+        setTickets([]); // Set ke array kosong jika error
       });
-  }, [currentPage, searchTerm, priorityFilter, categoryFilter, sortOrder]);
+  // BARU: Tambahkan violationFilter sebagai dependency
+  }, [currentPage, searchTerm, priorityFilter, categoryFilter, sortOrder, violationFilter]);
 
   const viewTicketDetail = async (ticketNumber) => {
     setLoadingTickets(true);  
@@ -164,37 +178,45 @@ const Dashboard = () => {
     }
   };
 
-  // Handler untuk clear filter jika perlu
+  // Handler untuk clear filter (DI MODIFIKASI)
   const clearFilters = () => {
     setSearchTerm('');
     setPriorityFilter('all');
     setCategoryFilter('all');
+    setViolationFilter('all'); // <-- BARU
     setSortOrder('-open_date');
-    setCurrentPage(1);  // Reset ke page 1
+    setCurrentPage(1);
+  };
+  
+  const filterStyles = { 
+    padding: '10px', 
+    borderRadius: '8px', 
+    border: '1px solid #e2e8f0',
+    backgroundColor: 'white' // Pastikan background putih
   };
 
   return (
     <section id="dashboard" className="content-section active">
-      {/* Stats Cards - Render dengan check null & loadingStats */}
+      {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">
           <i className="fas fa-ticket-alt"></i>
-          <h3>{loadingStats ? 'Loading...' : (stats.total_tickets ? stats.total_tickets.toLocaleString() : '0')}</h3>
+          <h3>{loadingStats ? '...' : (stats.total_tickets ? stats.total_tickets.toLocaleString() : '0')}</h3>
           <p>Total Tiket</p>
         </div>
         <div className="stat-card">
           <i className="fas fa-exclamation-triangle"></i>
-          <h3>{loadingStats ? 'Loading...' : (stats.violation_count ? stats.violation_count.toLocaleString() : '0')}</h3>
+          <h3>{loadingStats ? '...' : (stats.violation_count ? stats.violation_count.toLocaleString() : '0')}</h3>
           <p>Pelanggaran SLA</p>
         </div>
         <div className="stat-card">
           <i className="fas fa-check-circle"></i>
-          <h3>{loadingStats ? 'Loading...' : (stats.compliance_count ? stats.compliance_count.toLocaleString() : '0')}</h3>
+          <h3>{loadingStats ? '...' : (stats.compliance_count ? stats.compliance_count.toLocaleString() : '0')}</h3>
           <p>Dalam SLA</p>
         </div>
         <div className="stat-card">
           <i className="fas fa-percentage"></i>
-          <h3>{loadingStats ? 'Loading...' : (stats.compliance_rate ? stats.compliance_rate + '%' : '0%')}</h3>
+          <h3>{loadingStats ? '...' : (stats.compliance_rate ? stats.compliance_rate + '%' : '0%')}</h3>
           <p>SLA Compliance</p>
         </div>
       </div>
@@ -206,13 +228,13 @@ const Dashboard = () => {
           placeholder="Search by ID Tiket..."
           value={searchTerm}
           onChange={handleSearchChange}
-          style={{ padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', flex: 1, minWidth: '200px' }}
+          style={{ ...filterStyles, flex: 1, minWidth: '200px' }}
         />
         
         <select
           value={priorityFilter}
           onChange={(e) => { setPriorityFilter(e.target.value); setCurrentPage(1); }}
-          style={{ padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+          style={filterStyles}
         >
           <option value="all">All Prioritas</option>
           <option value="4 - Low">Low</option>
@@ -221,10 +243,22 @@ const Dashboard = () => {
           <option value="1 - Critical">Critical</option>
         </select>
         
+        {/* --- BARU: Dropdown Filter SLA --- */}
+        <select
+          value={violationFilter}
+          onChange={(e) => { setViolationFilter(e.target.value); setCurrentPage(1); }}
+          style={filterStyles}
+        >
+          <option value="all">All Status SLA</option>
+          <option value="true">Melanggar</option>
+          <option value="false">Tidak Melanggar</option>
+        </select>
+        {/* --- AKHIR BARU --- */}
+
         <select
           value={categoryFilter}
           onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-          style={{ padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+          style={filterStyles}
         >
           <option value="all">All Category</option>
           {categories.map((category) => (
@@ -232,19 +266,18 @@ const Dashboard = () => {
               {category.label}
             </option>
           ))}
-          {/* Tambah option lain dari CSV unique: df['Category'].unique() */}
         </select>
         
         <select
           value={sortOrder}
           onChange={(e) => { setSortOrder(e.target.value); setCurrentPage(1); }}
-          style={{ padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+          style={filterStyles}
         >
           <option value="-open_date">Waktu Dibuat (Terbaru)</option>
           <option value="open_date">Waktu Dibuat (Terlama)</option>
         </select>
         
-        <button className="btn" onClick={clearFilters} style={{ padding: '10px 20px' }}>
+        <button className="btn" onClick={clearFilters} style={{ padding: '10px 20px', height: '42px' }}>
           Clear Filters
         </button>
       </div>
@@ -257,20 +290,29 @@ const Dashboard = () => {
             <th>ID Tiket</th>
             <th>Item</th>
             <th>Prioritas</th>
+            {/* BARU: Tambah kolom Status SLA */}
+            <th>Status SLA</th> 
             <th>Kategori</th>
             <th>Dibuat</th>
             <th>Aksi</th>
           </tr>
         </thead>
         <tbody>
-          {tickets.map((ticket) => (
+          {/* Pastikan `tickets` adalah array sebelum mapping */}
+          {Array.isArray(tickets) && tickets.map((ticket) => (
             <tr key={ticket.number}>
               <td>{ticket.number}</td>
               <td>{ticket.item}</td>
               <td><span className={`priority-${ticket.priority.replace(' - ', '-').toLowerCase()}`}>{ticket.priority}</span></td>
+              {/* BARU: Tampilkan Status SLA */}
+              <td>
+                <span className={ticket.is_sla_violated ? 'sla-violated' : 'sla-safe'}>
+                  {ticket.is_sla_violated ? 'Melanggar' : 'Aman'}
+                </span>
+              </td>
               <td>{ticket.category}</td>
               <td>{new Date(ticket.open_date).toLocaleString('id-ID')}</td>
-              <td><button className="btn" onClick={() => viewTicketDetail(ticket.number)} disabled={loadingTickets}>Detail</button></td>  
+              <td><button className="btn" onClick={() => viewTicketDetail(ticket.number)} disabled={loadingTickets}>Detail</button></td> 
             </tr>
           ))}
         </tbody>

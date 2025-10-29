@@ -1,9 +1,9 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import (
-    TicketViewSet, get_stats, predict_sla, get_unique_values,
-    get_violation_by_category, get_monthly_trend, get_feature_importance, get_clusters # Tambah import
-)
+
+from .views import (TicketViewSet, get_clusters,  # Tambah import
+                    get_feature_importance, get_monthly_trend, get_stats,
+                    get_unique_values, get_violation_by_category, predict_sla)
 
 router = DefaultRouter()
 router.register(r'tickets', TicketViewSet)  # /api/tickets/ untuk list

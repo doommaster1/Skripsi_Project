@@ -1,0 +1,50 @@
+[
+    {
+        "feature": "Days to Due",
+        "importance": 0.21380591181721229
+    },
+    {
+        "feature": "Priority",
+        "importance": 0.19346603035213658
+    },
+    {
+        "feature": "Item",
+        "importance": 0.1627784985365558
+    },
+    {
+        "feature": "Category",
+        "importance": 0.12443964036291716
+    },
+    {
+        "feature": "Application Creation Hour",
+        "importance": 0.08076312662680914
+    },
+    {
+        "feature": "Application SLA Deadline Hour",
+        "importance": 0.07168836367327952
+    },
+    {
+        "feature": "Open Month",
+        "importance": 0.048963309237794246
+    },
+    {
+        "feature": "Sub Category",
+        "importance": 0.03913734581416485
+    },
+    {
+        "feature": "Application SLA Deadline Day of Week",
+        "importance": 0.030232334438375724
+    },
+    {
+        "feature": "Application Creation Day of Week",
+        "importance": 0.029845218938946136
+    },
+    {
+        "feature": "Is Open Date Off",
+        "importance": 0.00487872369313144
+    },
+    {
+        "feature": "Is Due Date Off",
+        "importance": 1.4965086771202435e-06
+    }
+]

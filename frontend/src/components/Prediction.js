@@ -26,6 +26,7 @@ const Prediction = () => {
       { value: 'application 332', label: 'Application 332' },
       // Tambah sample
     ],
+    sub_categories: [], // Pastikan fallback sub_categories juga ada
   };
 
   // Fetch unique
@@ -40,7 +41,12 @@ const Prediction = () => {
       })
       .then(data => {
         console.log('Unique data length:', data.categories?.length || 0);
-        setUniqueOptions(data || fallbackOptions);
+        // Pastikan data yang diterima valid sebelum di-set
+        if (data && data.categories && data.items && data.sub_categories) {
+          setUniqueOptions(data);
+        } else {
+          setUniqueOptions(fallbackOptions);
+        }
         setLoadingUnique(false);
       })
       .catch(err => {
@@ -62,10 +68,34 @@ const Prediction = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.category || !formData.item || !formData.open_date || !formData.due_date) {
-      alert('Lengkapi field wajib!');
+
+    // BARU: Pengecekan field wajib (termasuk 'priority')
+    if (!formData.priority || !formData.category || !formData.item || !formData.open_date || !formData.due_date) {
+      alert('Lengkapi semua field wajib (Priority, Category, Item, Open Date, Due Date)!');
       return;
     }
+
+    // --- AWAL BLOK VALIDASI TANGGAL (YANG BARU) ---
+    const openDate = new Date(formData.open_date);
+    const dueDate = new Date(formData.due_date);
+
+    // ATURAN 1: Due Date tidak boleh sebelum Open Date
+    if (dueDate < openDate) {
+        alert('Validasi Gagal: "Due Date" tidak boleh lebih awal dari "Open Date".');
+        return; // Hentikan submit
+    }
+
+    // ATURAN 2: Due Date tidak boleh terlalu lama (misal, 30 hari)
+    const MAX_SLA_DAYS = 30; // Anda bisa ubah angka ini
+    const diffInMs = dueDate.getTime() - openDate.getTime();
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+    if (diffInDays > MAX_SLA_DAYS) {
+        alert(`Validasi Gagal: "Due Date" tidak boleh lebih dari ${MAX_SLA_DAYS} hari setelah "Open Date".`);
+        return; // Hentikan submit
+    }
+    // --- AKHIR BLOK VALIDASI ---
+
     setLoading(true);
     setResult(null);  // Reset
     try {
@@ -112,7 +142,7 @@ const Prediction = () => {
           <label>Priority:</label>
           <select name="priority" value={formData.priority} onChange={handleInputChange} required>
             <option value="">Pilih Priority</option>
-            <option value="4 - Low">Low</option>sub
+            <option value="4 - Low">Low</option>
             <option value="3 - Medium">Medium</option>
             <option value="2 - High">High</option>
             <option value="1 - Critical">Critical</option>
@@ -129,14 +159,14 @@ const Prediction = () => {
           </select>
         </div>
         <div className="form-group">
-          <label>Sub Category: (Opsional)</label>
-          <select name="sub_category" value={formData.sub_category} onChange={handleSelectChange}>
-            <option value="">Pilih Sub Category (jika ada)</option>
-            {uniqueOptions.sub_categories && uniqueOptions.sub_categories.map((opt, index) => (
-              <option key={index} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
+          <label>Sub Category: (Opsional)</label>
+          <select name="sub_category" value={formData.sub_category} onChange={handleSelectChange}>
+            <option value="">Pilih Sub Category (jika ada)</option>
+            {uniqueOptions.sub_categories && uniqueOptions.sub_categories.map((opt, index) => (
+              <option key={index} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
 
         <div className="form-group">
           <label>Item:</label>
@@ -174,13 +204,13 @@ const Prediction = () => {
         {/* Info Tambahan */}
         <div style={{ marginTop: '15px', fontSize: '0.9rem' }}>
           <h4>Risk Factors:</h4>
-      <ul>{result.risk_factors?.map((factor, idx) => <li key={idx}>{factor}</li>) || 'N/A'}</ul>
-      
-      <h4>Rekomendasi:</h4>
-      <p>{result.recommended_actions}</p>
-    </div>
-  </div>
-)}
+          <ul>{result.risk_factors?.map((factor, idx) => <li key={idx}>{factor}</li>) || 'N/A'}</ul>
+          
+          <h4>Rekomendasi:</h4>
+          <p>{result.recommended_actions}</p>
+        </div>
+      </div>
+    )}
     </section>
   );
 };

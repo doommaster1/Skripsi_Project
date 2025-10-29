@@ -38,24 +38,64 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',  # DRF
+    'rest_framework.authtoken',
     'corsheaders',     # CORS
-    'tickets',         # App kita
+    'django.contrib.sites',
+
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    
+    'dj_rest_auth',            
+    'dj_rest_auth.registration',
+    'tickets',         # App 
+]
+
+SITE_ID = 1  # Wajib
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',  
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS di atas
+    'allauth.account.middleware.AccountMiddleware',  # TAMBAH INI
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # Tambah di atas
 ]
 
 # CORS: Izinkan React (localhost:3000)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+]
+
+# Allauth config
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # OTP verifikasi
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Login via email
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_PASSWORD_MIN_LENGTH = 6
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Dev: Console email
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
 
@@ -95,7 +135,14 @@ DATABASES = {
 
 # DRF settings sederhana
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.AllowAny'],  # Allow all untuk dev
+    'DEFAULT_PERMISSION_CLASSES': [
+        # Pastikan ini adalah satu-satunya item di sini (kecuali Anda mau menambah permission lain)
+        'rest_framework.permissions.AllowAny', 
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
 }
 
 
